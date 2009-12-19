@@ -1,6 +1,7 @@
 load("lib/utils.js");
 
 function Template(fileName) {
+    this._fileName = fileName;
     this.contents = loadFile(fileName);
     this._code = "";
 
@@ -58,9 +59,21 @@ function Template(fileName) {
 
     this.run = function(page) {
         var output = "";
-	
+
 	var echo = function(string) {
 	    output += string;
+	};
+
+        var dir = this._fileName.match(/.*\//);
+
+	var include = function(filename) {
+	    var template;
+	    if(filename.charAt(0) == '/')
+		template = new Template(filename.substring(1));
+	    else
+		template = new Template(dir + filename);
+	    template.compile();
+	    echo(template.run());
 	};
 
 	eval(this._code);
