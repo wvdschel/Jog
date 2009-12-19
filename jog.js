@@ -8,7 +8,7 @@ function Section(basePath, parent) {
 
     this.parent = function() { return this._parent; };
     this.siblings = function() {
-	if(this.parent() != null)
+	if(this.parent() != null && this.parent() != undefined)
 	    return this.parent().subSections();
 	else
 	    return [];
@@ -33,9 +33,9 @@ function Section(basePath, parent) {
     };
 };
 
-function Page(path, section) {
+function Page(path, containingSection) {
     this._path = path;
-    this._section = section;
+    this._section = containingSection;
     var defaultMetadata = {"template" : "default.html"};
 
     this.section = function() { return this._section; };
@@ -53,9 +53,11 @@ function Page(path, section) {
 		var converter = new Showdown.converter();
 		this._content = converter.makeHtml(data);
 	    } else if(loadFile(filename + '.html') != null) {
+		var page = this;
+		
 		var temp = new Template(filename+'.html');
 		temp.compile();
-		this._content = temp.run();
+		this._content = temp.run(this);
 	    } else
 		throw("Neither " + filename + ".html or " + filename + ".md was found, aborting");
 	}
@@ -63,23 +65,23 @@ function Page(path, section) {
     };
 
     this.metadata = function() {
-	var loadedMeta = JSON.parse(loadFile('input/' + this._path + '.json'));
-	return concatArrays(loadedMeta, defaultMetadata);
+	if(this._metadata == undefined) {
+	    var loadedMeta = JSON.parse(loadFile('input/' + this._path + '.json'));
+	    this._metadata = concatArrays(loadedMeta, defaultMetadata);
+	}
+	return this._metadata;
+    };
+
+    this.title = function() {
+	return this.metadata()["title"];
     };
 
     this.render = function() {
-	var content = this.content();
 	var metadata = this.metadata();
-	
 	if(metadata["template"] != null && metadata["template"] != undefined) {
-	    var page = new Object();
-	    page.content  = content;
-	    page.title    = metadata["title"];
-	    page.metadata = metadata;
-
-	    var temp = new Template('input/' + metadata["template"]);
+	    var temp = new Template('input/' + metadata["template"])
 	    temp.compile();
-	    return temp.run(page);
+	    return temp.run(this);
 	} else
 	    return this._content;
     };
@@ -90,15 +92,17 @@ function Page(path, section) {
 };
 
 var sections = [new Section("input")];
-while(sections.length > 0) {
-    var section = sections.splice(0, 1)[0];
-    
-    for each(page in section.pages()) {
+var pos = 0;
+while(sections.length > pos) {
+    var sect = sections[pos];
+
+    for each(page in sect.pages()) {
 	if(page.writeOut())
 	    print("Wrote " + page._path);
 	else
 	    print("Failed to write " + page._path);
     }
     
-    joinArrays(section.subSections(), sections);
+    joinArrays(sect.subSections(), sections);
+    pos ++;
 }
