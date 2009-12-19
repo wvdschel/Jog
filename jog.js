@@ -2,26 +2,49 @@ load('lib/showdown.js');
 load('lib/utils.js');
 load('template.js');
 
-function Section(basePath) {
+function Section(basePath, parent) {
     this._basePath = basePath;
+    this._parent = parent;
 
-    this.getPages = function() {
+    this.parent = function() { return this._parent; };
+    this.siblings = function() {
+	if(this.parent() != null)
+	    return this.parent().subSections();
+	else
+	    return [];
+    };
+
+    this.pages = function() {
 	if(this._pages == undefined) {
 	    this._pages = [];
-	    for each(file in listDir('input/' + this._basePath, /\.json$/))
-		this._pages[this._pages.length] = new Page(file.substring(6, file.length - 5));
+	    for each(file in listFiles('input/' + this._basePath, /\.json$/))
+		this._pages[this._pages.length] = new Page(file.substring(6, file.length - 5), this);
 	}
 	return this._pages;
     };
 
-    this.getBasePath = function() { 
-	return this._basePath;
+    this.subSections = function() {
+	if(this._sections == undefined) {
+	    this._sections = [];
+	    for each(file in listSubDirs('input/' + this._basePath))
+		this._sections[this._sections.length] = new Section(file);
+	}
+	return this._sections;
     };
 };
 
-function Page(path) {
+function Page(path, section) {
     this._path = path;
+    this._section = section;
     var defaultMetadata = {"template" : "default.html"};
+
+    this.section = function() { return this._section; };
+    this.siblings = function() {
+	if(this.section() != null)
+	    return this.section().pages();
+	else
+	    return [];
+    };
 
     this.content = function() {
 	if(this._content == undefined) {
@@ -66,10 +89,16 @@ function Page(path) {
     };
 };
 
-var s = new Section(".");
-for each(page in s.getPages()) {
-    if(page.writeOut())
-	print("Wrote " + page._path);
-    else
-	print("Failed to write " + page._path);
+var sections = [new Section(".")];
+while(sections.length > 0) {
+    var section = sections.splice(0, 1)[0];
+
+    for each(page in section.pages()) {
+	if(page.writeOut())
+	    print("Wrote " + page._path);
+	else
+	    print("Failed to write " + page._path);
+    }
+
+    joinArrays(section.subSections(), sections);
 }
