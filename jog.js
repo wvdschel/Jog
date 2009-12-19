@@ -17,7 +17,7 @@ function Section(basePath, parent) {
     this.pages = function() {
 	if(this._pages == undefined) {
 	    this._pages = [];
-	    for each(file in listFiles('input/' + this._basePath, /\.json$/))
+	    for each(file in listFiles(this._basePath, /\.json$/))
 		this._pages[this._pages.length] = new Page(file.substring(6, file.length - 5), this);
 	}
 	return this._pages;
@@ -26,7 +26,7 @@ function Section(basePath, parent) {
     this.subSections = function() {
 	if(this._sections == undefined) {
 	    this._sections = [];
-	    for each(file in listSubDirs('input/' + this._basePath))
+	    for each(file in listSubDirs(this._basePath))
 		this._sections[this._sections.length] = new Section(file);
 	}
 	return this._sections;
@@ -89,16 +89,16 @@ function Page(path, section) {
     };
 };
 
-var sections = [new Section(".")];
+var sections = [new Section("input")];
 while(sections.length > 0) {
     var section = sections.splice(0, 1)[0];
-
+    
     for each(page in section.pages()) {
 	if(page.writeOut())
 	    print("Wrote " + page._path);
 	else
 	    print("Failed to write " + page._path);
     }
-
+    
     joinArrays(section.subSections(), sections);
 }
