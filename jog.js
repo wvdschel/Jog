@@ -67,7 +67,7 @@ function Page(path, containingSection) {
     this.metadata = function() {
 	if(this._metadata == undefined) {
 	    var loadedMeta = JSON.parse(loadFile('input/' + this._path + '.json'));
-	    this._metadata = concatArrays(loadedMeta, defaultMetadata);
+	    this._metadata = concatArrays(defaultMetadata, loadedMeta);
 	}
 	return this._metadata;
     };
@@ -83,7 +83,7 @@ function Page(path, containingSection) {
 	    temp.compile();
 	    return temp.run(this);
 	} else
-	    return this._content;
+	    return this.content();
     };
 
     this.writeOut = function() {

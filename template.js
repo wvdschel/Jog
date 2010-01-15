@@ -11,15 +11,16 @@ function Template(fileName) {
 	    var container = containerRegex.exec(string);
 	    
 	    var cutOff = 0;
-	    while(container != null && cutOff + container.index + container[0].length < start+length) {
+	    while(container !== null && cutOff + container.index + container[0].length < start+length) {
 		cutOff += container.index + container[0].length;
 		container = containerRegex.exec(string.substring(cutOff));
 	    }
 	    // End of code contained within string, try next
-	    if(container != null && cutOff + container.index < start)
-		return true;
-	    else
-		return false;
+	    if(container !== null && cutOff + container.index < start) {
+			return true;
+	    } else {
+			return false;
+		}
 	};
 
 	var echoStatic = function(string) {
@@ -31,25 +32,28 @@ function Template(fileName) {
 	var doubleQuotedString = /"([^"\n]|\\")*"/, singleQuotedString = /'([^'\n]|\\')*'/, regexString = /\/([^\/\n]|\\\/)*\//;
 	var output = "";
 	var currStart, currEnd, lastEnd = 0;
-	while ((currStart = startCode.exec(this.contents)) != null)
+	while ((currStart = startCode.exec(this.contents)) !== null)
 	{
 	    var restOfContent = this.contents.substring(startCode.lastIndex);
 	    
 	    // Look for the end of the code
 	    var cutSoFar = 0;
-	    while((currEnd = endCode.exec(restOfContent.substring(cutSoFar))) != null) {
-		// Check if it's not contained within a string, else look for next end of code and try again
-		if( !containedWithin(   cutSoFar + currEnd.index, currEnd[0].length, doubleQuotedString, restOfContent)
-		    && !containedWithin(cutSoFar + currEnd.index, currEnd[0].length, singleQuotedString, restOfContent)
-		    && !containedWithin(cutSoFar + currEnd.index, currEnd[0].length, regexString,        restOfContent))
-		    break;
+	    while((currEnd = endCode.exec(restOfContent.substring(cutSoFar))) !== null) {
+			// Check if it's not contained within a string, else look for next end of code and try again
+			if( !containedWithin(   cutSoFar + currEnd.index, currEnd[0].length, doubleQuotedString, restOfContent) &&
+			    !containedWithin(cutSoFar + currEnd.index, currEnd[0].length, singleQuotedString, restOfContent) &&
+			    !containedWithin(cutSoFar + currEnd.index, currEnd[0].length, regexString,        restOfContent)) {
+			    break;
+			}
 		
-		cutSoFar += currEnd.index + currEnd[0].length;
+			cutSoFar += currEnd.index + currEnd[0].length;
 	    }
 
-	    if(currEnd == null) throw("Error: end of code not found, beginning at " + currStart.index + ". Remaining data: \n" + restOfContent);
+	    if(currEnd === null) {
+			throw("Error: end of code not found, beginning at " + currStart.index + ". Remaining data: \n" + restOfContent);
+		}
 	    
-            output += echoStatic(this.contents.substring(lastEnd, currStart.index));
+        output += echoStatic(this.contents.substring(lastEnd, currStart.index));
 	    output += this.contents.substring(startCode.lastIndex, startCode.lastIndex + currEnd.index + cutSoFar) + "\n";
 	    lastEnd = (cutSoFar + currEnd.index + currEnd[0].length) + startCode.lastIndex;
 	}
@@ -68,15 +72,24 @@ function Template(fileName) {
 
 	var include = function(filename) {
 	    var template;
-	    if(filename.charAt(0) == '/')
-		template = new Template(filename.substring(1));
-	    else
-		template = new Template(dir + filename);
+	    if(filename.charAt(0) == '/') {
+			template = new Template(filename.substring(1));
+	    } else {
+			template = new Template(dir + filename);
+		}
 	    template.compile();
 	    echo(template.run());
 	};
-
-	eval(this._code);
-	return output;
+        
+        try {
+          eval(this._code);
+        } catch(e) {
+          print("Code:");
+          print("-----");
+          print(this._code);
+          print("\n");
+          throw(e);
+        }
+		return output;
     };
-};
+}
